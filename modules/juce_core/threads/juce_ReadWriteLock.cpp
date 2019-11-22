@@ -38,7 +38,7 @@ ReadWriteLock::~ReadWriteLock() noexcept
 void ReadWriteLock::enterRead() const noexcept
 {
     while (! tryEnterRead())
-        waitEvent.wait (100);
+        waitEventRead.wait (10);
 }
 
 bool ReadWriteLock::tryEnterRead() const noexcept
@@ -83,7 +83,8 @@ void ReadWriteLock::exitRead() const noexcept
             if (--(trc.count) == 0)
             {
                 readerThreads.remove (i);
-                waitEvent.signal();
+                waitEventRead.signal();
+                waitEventWrite.signal();
             }
 
             return;
@@ -103,7 +104,7 @@ void ReadWriteLock::enterWrite() const noexcept
     {
         ++numWaitingWriters;
         accessLock.exit();
-        waitEvent.wait (100);
+        waitEventWrite.wait (10);
         accessLock.enter();
         --numWaitingWriters;
     }
@@ -139,7 +140,8 @@ void ReadWriteLock::exitWrite() const noexcept
     if (--numWriters == 0)
     {
         writerThreadId = {};
-        waitEvent.signal();
+        waitEventRead.signal();
+        waitEventWrite.signal();
     }
 }
 
